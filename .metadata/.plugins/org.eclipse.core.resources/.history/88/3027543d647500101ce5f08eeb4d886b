@@ -1,0 +1,24 @@
+package com.example.demo.dto;
+
+public class MarketOrderResponse {
+    private String transactionId;
+    private String status;
+    private Double executedPrice;
+
+    public MarketOrderResponse() {}
+
+    public MarketOrderResponse(String transactionId, String status, Double executedPrice) {
+        this.transactionId = transactionId;
+        this.status = status;
+        this.executedPrice = executedPrice;
+    }
+
+    public String getTransactionId() { return transactionId; }
+    public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public Double getExecutedPrice() { return executedPrice; }
+    public void setExecutedPrice(Double executedPrice) { this.executedPrice = executedPrice; }
+}

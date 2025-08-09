@@ -1,0 +1,31 @@
+package com.example.demo.dto;
+
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public class MarketOrderRequest {
+    @JsonProperty("orderId")
+    @NotNull(message = "orderId required")
+    private Integer orderId;
+
+    @JsonProperty("tickerSymbol")
+    @NotBlank(message = "tickerSymbol required")
+    private String tickerSymbol;
+
+    @JsonProperty("quantity")
+    @NotNull(message = "quantity required")
+    @Min(value = 1, message = "quantity >= 1")
+    private Integer quantity;
+
+    @JsonProperty("orderAmt")
+    @NotNull(message = "orderAmt required")
+    private Double orderAmt;
+
+    @JsonProperty("orderType")
+    @NotBlank(message = "orderType required")
+    private String orderType;
+
+    // getters & setters...
+}

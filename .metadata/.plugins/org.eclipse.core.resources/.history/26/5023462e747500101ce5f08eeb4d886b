@@ -1,0 +1,69 @@
+package com.example.demo.controller;
+
+public class TransactionController_Jackson {
+
+}
+package com.example.demo.controller;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import jakarta.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.example.demo.dto.TransactionReserveRequest;
+import com.example.demo.dto.TransactionReserveResponse;
+import com.example.demo.model.AcctTransaction;
+import com.example.demo.repository.TransactionRepository;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@RestController
+@RequestMapping("/api/transactions_jackson")
+public class TransactionController_Jackson {
+
+    private final TransactionRepository repo;
+    private final ObjectMapper objectMapper;
+
+    public TransactionController_Jackson(TransactionRepository repo, ObjectMapper objectMapper) {
+        this.repo = repo;
+        this.objectMapper = objectMapper;
+    }
+
+    @PostMapping("/reserve")
+    public ResponseEntity<String> reserve(@Valid @RequestBody String transactionJson) throws Exception {
+        TransactionReserveRequest req = objectMapper.readValue(transactionJson, TransactionReserveRequest.class);
+
+        Double fee = 0.0;
+        if (req.getOrderAmt() != null) {
+            fee = req.getOrderAmt() * 0.001; // 0.1%
+        }
+        Double reserved = (req.getOrderAmt() == null) ? 0.0 : (req.getOrderAmt() - fee);
+
+        AcctTransaction t = new AcctTransaction();
+        t.setOrderId(req.getOrderId());
+        t.setTransactionType("RESERVE");
+        t.setTickerSymbol(req.getTickerSymbol());
+        t.setOrderAmt(req.getOrderAmt());
+        t.setOrderDateTime(LocalDateTime.now());
+        t.setFeeAmt(fee);
+        t.setBalanceAmt(reserved);
+
+        AcctTransaction saved = repo.save(t);
+
+        TransactionReserveResponse resp = new TransactionReserveResponse("RESERVED", saved.getId(), fee, reserved);
+        String json = objectMapper.writeValueAsString(resp);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(json);
+    }
+
+    @GetMapping
+    public ResponseEntity<String> list() throws Exception {
+        List<AcctTransaction> list = repo.findAll();
+        String json = objectMapper.writeValueAsString(list);
+        return ResponseEntity.ok(json);
+    }
+}

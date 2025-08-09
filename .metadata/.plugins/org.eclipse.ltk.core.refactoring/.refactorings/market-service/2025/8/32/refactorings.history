@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;market-service/src/main/java/com/example/demo/controller/MarketController_Jackson.java&apos; to &apos;Market_JacksonController.java&apos;" description="Rename resource &apos;MarketController_Jackson.java&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="src/main/java/com/example/demo/controller/MarketController_Jackson.java" name="Market_JacksonController.java" stamp="1754780383073" updateReferences="true"/>
+</session>

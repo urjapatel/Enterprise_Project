@@ -1,0 +1,93 @@
+package com.example.demo.controller;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+
+import jakarta.validation.Valid;
+
+import com.example.demo.model.Order;
+import com.example.demo.repository.OrderRepository;
+import com.example.demo.dto.MarketOrderRequest;
+import com.example.demo.dto.MarketOrderResponse;
+import com.example.demo.dto.TransactionReserveRequest;
+import com.example.demo.dto.TransactionReserveResponse;
+
+@Controller
+public class OrderController {
+
+    private final OrderRepository orderRepository;
+    private final RestTemplate restTemplate;
+
+    public OrderController(OrderRepository orderRepository, RestTemplate restTemplate) {
+        this.orderRepository = orderRepository;
+        this.restTemplate = restTemplate;
+    }
+
+    @GetMapping("/orders/new")
+    public String newOrderForm(Model model) {
+        model.addAttribute("order", new Order());
+        return "orderForm";
+    }
+
+    @PostMapping("/orders")
+    public String submitOrder(@Valid @ModelAttribute("order") Order order, BindingResult br, Model model) {
+        if (br.hasErrors()) {
+            return "orderForm";
+        }
+        order.setOrderDate(LocalDateTime.now());
+        Order saved = orderRepository.save(order);
+
+        // call market-service
+        MarketOrderRequest mor = new MarketOrderRequest(saved.getOrderId(), saved.getTickerSymbol(), saved.getQuantity(), saved.getOrderAmt(), saved.getOrderType());
+        MarketOrderResponse marketResp = restTemplate.postForObject("http://market-service/api/market/orders", mor, MarketOrderResponse.class);
+
+        // call account-service to reserve funds/positions
+        TransactionReserveRequest tres = new TransactionReserveRequest(saved.getOrderId(), saved.getOrderAmt(), saved.getTickerSymbol());
+        TransactionReserveResponse tresp = restTemplate.postForObject("http://account-service/api/transactions/reserve", tres, TransactionReserveResponse.class);
+
+        model.addAttribute("marketResp", marketResp);
+        model.addAttribute("transactionResp", tresp);
+        model.addAttribute("savedOrder", saved);
+        return "success";
+    }
+
+    // REST endpoints
+    @RestController
+    @RequestMapping("/api/orders")
+    static class OrderApiController {
+        private final OrderRepository repo;
+        private final RestTemplate restTemplate;
+
+        public OrderApiController(OrderRepository repo, RestTemplate restTemplate) {
+            this.repo = repo;
+            this.restTemplate = restTemplate;
+        }
+
+        @PostMapping
+        public Order createOrder(@RequestBody @Valid Order order) {
+            order.setOrderDate(LocalDateTime.now());
+            Order saved = repo.save(order);
+
+            // notify market service (optional)
+            MarketOrderRequest mor = new MarketOrderRequest(saved.getOrderId(), saved.getTickerSymbol(), saved.getQuantity(), saved.getOrderAmt(), saved.getOrderType());
+            restTemplate.postForObject("http://market-service/api/market/orders", mor, MarketOrderResponse.class);
+
+            // notify account service
+            TransactionReserveRequest tres = new TransactionReserveRequest(saved.getOrderId(), saved.getOrderAmt(), saved.getTickerSymbol());
+            restTemplate.postForObject("http://account-service/api/transactions/reserve", tres, TransactionReserveResponse.class);
+
+            return saved;
+        }
+
+        @GetMapping
+        public List<Order> list() {
+            return repo.findAll();
+        }
+    }
+}

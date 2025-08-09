@@ -1,0 +1,21 @@
+package com.example.accountservice.dto;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotNull;
+
+public class TransactionReserveRequest {
+    @JsonProperty("orderId")
+    @NotNull(message = "orderId required")
+    private Integer orderId;
+
+    @JsonProperty("orderAmt")
+    @NotNull(message = "orderAmt required")
+    private Double orderAmt;
+
+    @JsonProperty("tickerSymbol")
+    private String tickerSymbol;
+
+    public TransactionReserveRequest() {}
+
+    // getters & setters...
+}

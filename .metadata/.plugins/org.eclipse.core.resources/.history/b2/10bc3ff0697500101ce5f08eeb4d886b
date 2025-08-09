@@ -1,0 +1,63 @@
+package com.example.demo.controller;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import jakarta.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/market")
+public class MarketController {
+
+    private final MarketOrderRepository repo;
+
+    public MarketController(MarketOrderRepository repo) {
+        this.repo = repo;
+    }
+
+    @PostMapping("/orders")
+    public ResponseEntity<MarketOrderResponse> placeOrder(@Valid @RequestBody MarketOrderRequest req) {
+        double executedPrice = 0.0;
+        if (req.getOrderAmt() != null && req.getQuantity() != null && req.getQuantity() != 0) {
+            executedPrice = req.getOrderAmt() / req.getQuantity();
+        }
+
+        MarketOrder mo = new MarketOrder(
+            req.getOrderId(), 
+            req.getTickerSymbol(), 
+            executedPrice, 
+            "NYSE", 
+            "CONFIRMED"
+        );
+
+        MarketOrder saved = repo.save(mo);
+
+        // Convert Double to BigDecimal
+        BigDecimal priceBD = BigDecimal.valueOf(saved.getExecutedPrice());
+        BigDecimal quantityBD = req.getQuantity() != null ? BigDecimal.valueOf(req.getQuantity()) : BigDecimal.ZERO;
+
+        // Create response object with all required parameters
+        MarketOrderResponse resp = new MarketOrderResponse(
+            saved.getId(),                // orderId
+            saved.getTickerSymbol(),      // symbol
+            "BUY",                       // side - placeholder or get from saved
+            priceBD,                     // price
+            quantityBD,                  // quantity
+            saved.getConfirmationStatus(), // status
+            LocalDateTime.now()          // createdAt - placeholder, ideally saved has it
+        );
+
+        return new ResponseEntity<>(resp, HttpStatus.CREATED);
+    }
+
+
+    @GetMapping("/orders")
+    public List<MarketOrder> listOrders() {
+        return repo.findAll();
+    }
+}

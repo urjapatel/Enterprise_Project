@@ -1,0 +1,57 @@
+package com.example.demo.controller;
+
+public class MarketController_Jackson {
+
+}
+package com.example.demo.controller;
+
+import java.util.List;
+
+import jakarta.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.example.demo.dto.MarketOrderRequest;
+import com.example.demo.dto.MarketOrderResponse;
+import com.example.demo.model.MarketOrder;
+import com.example.demo.repository.MarketOrderRepository;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@RestController
+@RequestMapping("/api/market_jackson")
+public class MarketController_Jackson {
+
+    private final MarketOrderRepository repo;
+    private final ObjectMapper objectMapper;
+
+    public MarketController(MarketOrderRepository repo, ObjectMapper objectMapper) {
+        this.repo = repo;
+        this.objectMapper = objectMapper;
+    }
+
+    @PostMapping("/orders")
+    public ResponseEntity<String> placeOrder(@Valid @RequestBody String marketOrderJson) throws Exception {
+        MarketOrderRequest req = objectMapper.readValue(marketOrderJson, MarketOrderRequest.class);
+
+        double executedPrice = 0.0;
+        if (req.getOrderAmt() != null && req.getQuantity() != null && req.getQuantity() != 0) {
+            executedPrice = req.getOrderAmt() / req.getQuantity();
+        }
+        MarketOrder mo = new MarketOrder(req.getOrderId(), req.getTickerSymbol(), executedPrice, "NYSE", "CONFIRMED");
+        MarketOrder saved = repo.save(mo);
+        MarketOrderResponse resp = new MarketOrderResponse(saved.getId(), saved.getConfirmationStatus(), saved.getExecutedPrice());
+
+        String json = objectMapper.writeValueAsString(resp);
+        return ResponseEntity.status(HttpStatus.CREATED).body(json);
+    }
+
+    @GetMapping("/orders")
+    public ResponseEntity<String> listOrders() throws Exception {
+        List<MarketOrder> orders = repo.findAll();
+        String json = objectMapper.writeValueAsString(orders);
+        return ResponseEntity.ok(json);
+    }
+}

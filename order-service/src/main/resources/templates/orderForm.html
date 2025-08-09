@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"/><title>Place Order</title></head>
+<body>
+  <h1>Place Order</h1>
+  <form th:action="@{/orders}" th:object="${order}" method="post">
+    <div>
+      <label>Order ID:</label>
+      <input th:field="*{orderId}" />
+      <div th:if="${#fields.hasErrors('orderId')}" th:errors="*{orderId}">Order ID Error</div>
+    </div>
+    <div>
+      <label>Ticker:</label>
+      <input th:field="*{tickerSymbol}" />
+      <div th:if="${#fields.hasErrors('tickerSymbol')}" th:errors="*{tickerSymbol}"></div>
+    </div>
+    <div>
+      <label>Quantity:</label>
+      <input th:field="*{quantity}" />
+      <div th:if="${#fields.hasErrors('quantity')}" th:errors="*{quantity}"></div>
+    </div>
+    <div>
+      <label>Order Amount (total):</label>
+      <input th:field="*{orderAmt}" />
+      <div th:if="${#fields.hasErrors('orderAmt')}" th:errors="*{orderAmt}"></div>
+    </div>
+    <div>
+      <label>Type:</label>
+      <select th:field="*{orderType}">
+        <option value="BUY">BUY</option>
+        <option value="SELL">SELL</option>
+      </select>
+      <div th:if="${#fields.hasErrors('orderType')}" th:errors="*{orderType}"></div>
+    </div>
+    <div><button type="submit">Place Order</button></div>
+  </form>
+</body>
+</html>

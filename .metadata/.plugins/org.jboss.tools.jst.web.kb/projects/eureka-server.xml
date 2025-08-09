@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kb-project>
+ <depends-on-projects/>
+ <used-by-projects/>
+ <paths/>
+ <validation>
+  <core validator-id="jboss.cdi.core"/>
+  <el>
+   <linked-el length="23" name="%0" offset="1886" path="%1"/>
+   <linked-el length="23" name="%2" offset="1886" path="%1"/>
+   <linked-el length="23" name="%3" offset="1886" path="%1"/>
+  </el>
+ </validation>
+ <aliases>
+  <alias path="spring" value="%0"/>
+  <alias path="cloud" value="%2"/>
+  <alias path="cloud.version" value="%3"/>
+  <alias path="/eureka-server/pom.xml" value="%1"/>
+ </aliases>
+ <includes/>
+ <uris/>
+</kb-project>

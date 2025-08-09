@@ -1,0 +1,114 @@
+package com.example.demo.controller;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import jakarta.validation.Valid;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
+
+import com.example.demo.model.Order;
+import com.example.demo.repository.OrderRepository;
+import com.example.demo.dto.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+
+
+
+@Controller
+public class Order_JacksonController {
+
+    private final OrderRepository orderRepository;
+    private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
+
+    public Order_JacksonController(OrderRepository orderRepository, RestTemplate restTemplate, ObjectMapper objectMapper) {
+        this.orderRepository = orderRepository;
+        this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
+    }
+
+    @GetMapping("/orders_jackson/new")
+    public String showOrderForm(Model model) {
+        model.addAttribute("order", new Order());
+        return "orderForm_jackson";
+    }
+
+    @PostMapping("/orders_jackson")
+    public String placeOrderFromForm(@Valid @ModelAttribute("order") Order order, BindingResult br, Model model) {
+        if (br.hasErrors()) return "orderForm";
+
+        order.setOrderDate(LocalDateTime.now());
+        Order saved = orderRepository.save(order);
+
+        // Build request to market service
+        MarketOrderRequest mor = new MarketOrderRequest(saved.getOrderId(), saved.getTickerSymbol(),
+                saved.getQuantity(), saved.getOrderAmt(), saved.getOrderType());
+        MarketOrderResponse marketResp = restTemplate.postForObject(
+                "http://market-service/api/market_jackson/orders", mor, MarketOrderResponse.class);
+
+        // Reserve funds via account-service
+        TransactionReserveRequest tres = new TransactionReserveRequest(saved.getOrderId(), saved.getOrderAmt(),
+                saved.getTickerSymbol());
+        TransactionReserveResponse tresp = restTemplate.postForObject(
+                "http://account-service/api/transactions_jackson/reserve", tres, TransactionReserveResponse.class);
+
+        model.addAttribute("savedOrder", saved);
+        model.addAttribute("marketResp", marketResp);
+        model.addAttribute("transactionResp", tresp);
+        return "success_jackson";
+    }
+
+    // REST API endpoints for orders with manual Jackson usage
+    @RestController
+    @RequestMapping("/api/orders_jackson")
+    public static class OrderApiController {
+
+        private final OrderRepository repo;
+        private final RestTemplate restTemplate;
+        private final ObjectMapper objectMapper;
+
+        public OrderApiController(OrderRepository repo, RestTemplate restTemplate, ObjectMapper objectMapper) {
+            this.repo = repo;
+            this.restTemplate = restTemplate;
+            this.objectMapper = objectMapper;
+        }
+
+        @PostMapping
+        public ResponseEntity<String> createOrder(@Valid @RequestBody String orderJson) throws Exception {
+            // Manual deserialize
+            Order order = objectMapper.readValue(orderJson, Order.class);
+
+            order.setOrderDate(LocalDateTime.now());
+            Order saved = repo.save(order);
+
+            // Notify other services (fire-and-forget)
+            MarketOrderRequest mor = new MarketOrderRequest(saved.getOrderId(), saved.getTickerSymbol(),
+                    saved.getQuantity(), saved.getOrderAmt(), saved.getOrderType());
+            restTemplate.postForObject("http://market-service/api/market/orders", mor, MarketOrderResponse.class);
+
+            TransactionReserveRequest tres = new TransactionReserveRequest(saved.getOrderId(), saved.getOrderAmt(),
+                    saved.getTickerSymbol());
+            restTemplate.postForObject("http://account-service/api/transactions/reserve", tres,
+                    TransactionReserveResponse.class);
+
+            // Serialize saved order to JSON response
+            String json = objectMapper.writeValueAsString(saved);
+            return ResponseEntity.status(HttpStatus.CREATED).body(json);
+        }
+
+        @GetMapping
+        public ResponseEntity<String> list() throws Exception {
+            List<Order> all = repo.findAll();
+            String json = objectMapper.writeValueAsString(all);
+            return ResponseEntity.ok(json);
+        }
+    }
+}

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;account-service/src/main/java/com/example/demo/controller/TransactionController_Jackson.java&apos; to &apos;Transaction_JacksonController.java&apos;" description="Rename resource &apos;TransactionController_Jackson.java&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="src/main/java/com/example/demo/controller/TransactionController_Jackson.java" name="Transaction_JacksonController.java" stamp="1754780395973" updateReferences="true"/>
+</session>
